@@ -2,10 +2,11 @@ import express from "express"
 const router = express.Router();
 import { branchController } from "../controllers/index.js"
 import { nameValidation } from "../validations/generalValidation.js";
-import { checkValidationResult } from "../middlewares/index.js"
+import { checkValidationResult, checkAdmin } from "../middlewares/index.js"
 
 router.post(
     "/",
+    checkAdmin,
     nameValidation,
     checkValidationResult,
     branchController.createBranch
@@ -16,6 +17,7 @@ router.get("/", branchController.listBranches);
 // Update a branch
 router.put(
   "/:id",
+  checkAdmin,
   nameValidation,
   checkValidationResult,
   branchController.updateBranch
@@ -24,6 +26,7 @@ router.put(
 // Delete a branch
 router.delete(
   "/:id",
+  checkAdmin,
   checkValidationResult,
   branchController.deleteBranch
 );

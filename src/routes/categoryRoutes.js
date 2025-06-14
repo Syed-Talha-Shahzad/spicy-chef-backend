@@ -1,6 +1,6 @@
 import express from "express";
 const router = express.Router();
-import { checkValidationResult } from "../middlewares/index.js";
+import { checkValidationResult, checkAdmin } from "../middlewares/index.js";
 import {
   createcategoryValidation,
   updateCategoryValidation,
@@ -10,6 +10,7 @@ import { categoryController } from "../controllers/index.js";
 
 router.post(
   "/",
+  checkAdmin,
   createcategoryValidation,
   checkValidationResult,
   categoryController.createCategory
@@ -17,6 +18,7 @@ router.post(
 
 router.put(
   "/",
+  checkAdmin,
   updateCategoryValidation,
   checkValidationResult,
   categoryController.updateCategory
@@ -31,6 +33,6 @@ router.get(
   categoryController.listingCategories
 );
 
-router.delete("/:id", categoryController.deleteCategory);
+router.delete("/:id",checkAdmin, categoryController.deleteCategory);
 
 export default router;

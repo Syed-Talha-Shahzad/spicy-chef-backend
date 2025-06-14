@@ -25,8 +25,9 @@ model user {
   id        String    @id @default(uuid())
   createdAt DateTime  @default(now())
   updatedAt DateTime? @updatedAt
-  name      String?
-  email     String
+  firstName String?
+  lastName  String?
+  email     String    @unique
   password  String
   address   String?
   city      String?

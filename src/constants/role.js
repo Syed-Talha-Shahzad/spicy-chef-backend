@@ -1,4 +1,4 @@
 export const USER_ROLE= Object.freeze({
-    SUPER_ADMIN: "super_admin",
-    CLIENT: "client",
+    SUPER_ADMIN: "SUPER_ADMIN",
+    CLIENT: "CLIENT",
 })

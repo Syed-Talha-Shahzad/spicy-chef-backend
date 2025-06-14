@@ -2,7 +2,7 @@ import express from "express";
 const router = express.Router();
 import { authController } from "../controllers/index.js";
 import { checkValidationResult } from "../middlewares/index.js"
-import { signInValidation } from "../validations/authValidation.js";
+import { signInValidation, signUpValidation } from "../validations/authValidation.js";
 
 router.post(
   "/signin",
@@ -10,5 +10,13 @@ router.post(
   checkValidationResult,
   authController.signIn
 );
+
+router.post(
+    "/signup",
+    signUpValidation,
+    checkValidationResult,
+    authController.signUp
+  );
+  
 
 export default router;
