@@ -12,6 +12,21 @@ enum userRole {
   CLIENT
 }
 
+enum orderType {
+  DELIVERY
+  COLLECTION
+}
+
+enum paymentType {
+  CASH
+  STRIPE
+}
+
+enum paymentStatus {
+  PENDING
+  PAID
+}
+
 model branch {
   id        String     @id @default(uuid())
   createdAt DateTime   @default(now())
@@ -49,14 +64,38 @@ model category {
 }
 
 model item {
-  id          String    @id @default(uuid())
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime? @updatedAt
+  id          String      @id @default(uuid())
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime?   @updatedAt
   name        String
   price       String
   image       String?
   description String?
   category_id String
-  category    category  @relation(fields: [category_id], references: [id], onDelete: Cascade)
-  status      Boolean   @default(true)
+  category    category    @relation(fields: [category_id], references: [id], onDelete: Cascade)
+  status      Boolean     @default(true)
+  orderItem   orderItem[]
+}
+
+model order {
+  id            String        @id @default(uuid())
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime?     @updatedAt
+  orderId       String        @unique
+  orderType     orderType
+  paymentType   paymentType
+  paymentStatus paymentStatus @default(PENDING)
+  totalAmount   Int
+  items         orderItem[]
+}
+
+model orderItem {
+  id        String    @id @default(uuid())
+  createdAt DateTime  @default(now())
+  updatedAt DateTime? @updatedAt
+  orderId   String
+  order     order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  itemId    String
+  item      item      @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  quantity  Int
 }
