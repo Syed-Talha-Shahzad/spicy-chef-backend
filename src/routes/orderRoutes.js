@@ -6,7 +6,6 @@ import { orderController } from "../controllers/index.js"
 
 router.post(
     "/",
-    checkAdmin,
     createOrderValidation,
     checkValidationResult,
     orderController.createOrder

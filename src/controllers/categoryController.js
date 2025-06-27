@@ -27,6 +27,26 @@ class categoryController {
     const result = await categoryService.listingCategories(req);
     return responseUtility.sendResponse(res, result);
   }
+
+  static async createItem(req, res) {
+    const result = await categoryService.createItem(req);
+    return responseUtility.sendResponse(res, result);
+  }
+
+  static async getItemListing(req, res) {
+    const result = await categoryService.getItemListing(req);
+    return responseUtility.sendResponse(res, result);
+  }
+
+  static async updateItem(req, res) {
+    const result = await categoryService.updateItem(req);
+    return responseUtility.sendResponse(res, result);
+  }
+
+  static async deleteItem(req, res) {
+    const result = await categoryService.deleteItem(req);
+    return responseUtility.sendResponse(res, result);
+  }
 }
 
 export default categoryController;

@@ -3,12 +3,14 @@ import branchRoutes from './branchRoutes.js';
 import categoryRoutes from './categoryRoutes.js';
 import authRoutes from './authRoutes.js';
 import orderRoutes from './orderRoutes.js'
+import uploadRoutes from './uploadFile.js';
 
 
 const router = express.Router();
 
 
 router.use('/branch', branchRoutes)
+router.use('/', uploadRoutes)
 router.use('/auth', authRoutes)
 router.use('/order', orderRoutes)
 router.use('/admin/category',categoryRoutes)

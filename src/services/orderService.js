@@ -9,7 +9,15 @@ function generateOrderCode() {
 
 class orderService {
   static async createOrder(req, res) {
-    const { items, orderType, paymentType } = req.body;
+    const {
+      items,
+      orderType,
+      paymentType,
+      fullName,
+      address,
+      phoneNo,
+      postCode,
+    } = req.body;
 
     try {
       const itemIds = items.map((i) => i.id);
@@ -39,6 +47,10 @@ class orderService {
         data: {
           orderId: generateOrderCode(),
           orderType,
+          fullName,
+          address,
+          phoneNo,
+          postCode,
           paymentType,
           paymentStatus: "PENDING",
           totalAmount,
@@ -85,7 +97,7 @@ class orderService {
 
       return {
         status: true,
-        message: "Order placed with cash",
+        message: "Order placed with cash or card",
         data: order,
       };
     } catch (error) {
@@ -120,7 +132,6 @@ class orderService {
         },
       });
 
-     
       return {
         status: true,
         message: "Orders fetched successfully",
@@ -136,24 +147,24 @@ class orderService {
 
   static async updateOrderStatus(req) {
     try {
-      const {id}  = req.params;
-  
+      const { id } = req.params;
+
       const existingOrder = await prisma.order.findFirst({
         where: { id },
       });
-  
+
       if (!existingOrder) {
         return {
           status: false,
           message: "Order not found",
         };
       }
-  
+
       const updatedOrder = await prisma.order.update({
         where: { id },
         data: { paymentStatus: "PAID" },
       });
-  
+
       return {
         status: true,
         message: "Order status updated to PAID",
@@ -166,7 +177,6 @@ class orderService {
       };
     }
   }
-  
 }
 
 export default orderService;

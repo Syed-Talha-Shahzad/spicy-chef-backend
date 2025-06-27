@@ -16,6 +16,7 @@ class orderController {
     const result = await orderService.updateOrderStatus(req);
     return responseUtility.sendResponse(res, result);
   }
+
 }
 
 export default orderController;

@@ -19,6 +19,7 @@ enum orderType {
 
 enum paymentType {
   CASH
+  CARD
   STRIPE
 }
 
@@ -84,6 +85,10 @@ model order {
   orderId       String        @unique
   orderType     orderType
   paymentType   paymentType
+  fullName String
+  phoneNo String
+  postCode String?
+  address String
   paymentStatus paymentStatus @default(PENDING)
   totalAmount   Int
   items         orderItem[]
