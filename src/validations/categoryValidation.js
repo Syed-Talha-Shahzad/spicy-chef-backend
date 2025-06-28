@@ -1,4 +1,4 @@
-import { body } from "express-validator";
+import { body, param } from "express-validator";
 
 export const createcategoryValidation = [
   body("name")
@@ -102,7 +102,6 @@ export const createItemValidation = [
     .matches(/^\d+(\.\d{1,2})?$/)
     .withMessage("Price must be a valid number (e.g., 9.99)"),
 
-
   body("description")
     .optional()
     .isLength({ max: 1000 })
@@ -113,5 +112,74 @@ export const createItemValidation = [
     .withMessage("Category ID is required")
     .isUUID()
     .withMessage("Category ID must be a valid UUID"),
+];
+
+export const createModifierValidation = [
+  body()
+    .isArray({ min: 1 })
+    .withMessage("Request body must be a non-empty array"),
+
+  body("*.name")
+    .notEmpty()
+    .withMessage("Each modifier must have a name")
+    .isString()
+    .withMessage("Modifier name must be a string"),
+
+  body("*.branch_id")
+    .notEmpty()
+    .withMessage("Each modifier must have a branch_id")
+    .isUUID()
+    .withMessage("branchId must be a valid UUID"),
+
+  body("*.modifierOptions")
+    .isArray({ min: 1 })
+    .withMessage("Each modifier must have at least one modifierOption"),
+
+  body("*.modifierOptions.*.name")
+    .notEmpty()
+    .withMessage("Each modifierOption must have a name")
+    .isString()
+    .withMessage("modifierOption name must be a string"),
+
+  body("*.modifierOptions.*.price")
+    .notEmpty()
+    .withMessage("Each modifierOption must have a price")
+    .isInt({ min: 0 })
+    .withMessage("modifierOption price must be a non-negative integer"),
+];
+
+export const updateModifierValidation = [
+  param("id")
+    .notEmpty()
+    .withMessage("Modifier ID (param) is required")
+    .isUUID()
+    .withMessage("Modifier ID must be a valid UUID"),
+
+  body("name")
+    .notEmpty()
+    .withMessage("Modifier name is required")
+    .isString()
+    .withMessage("Modifier name must be a string"),
+
+  body("modifierOptions")
+    .isArray({ min: 1 })
+    .withMessage("modifierOptions must be a non-empty array"),
+
+  body("modifierOptions.*.id")
+    .optional()
+    .isUUID()
+    .withMessage("modifierOption id must be a valid UUID if provided"),
+
+  body("modifierOptions.*.name")
+    .notEmpty()
+    .withMessage("Each modifierOption must have a name")
+    .isString()
+    .withMessage("modifierOption name must be a string"),
+
+  body("modifierOptions.*.price")
+    .notEmpty()
+    .withMessage("Each modifierOption must have a price")
+    .isInt({ min: 0 })
+    .withMessage("modifierOption price must be a non-negative integer"),
 ];
 

@@ -35,6 +35,7 @@ model branch {
   name      String
   status    Boolean    @default(true)
   category  category[]
+  modifier  modifier[]
 }
 
 model user {
@@ -85,10 +86,10 @@ model order {
   orderId       String        @unique
   orderType     orderType
   paymentType   paymentType
-  fullName String
-  phoneNo String
-  postCode String?
-  address String
+  fullName      String
+  phoneNo       String
+  postCode      String?
+  address       String
   paymentStatus paymentStatus @default(PENDING)
   totalAmount   Int
   items         orderItem[]
@@ -103,4 +104,25 @@ model orderItem {
   itemId    String
   item      item      @relation(fields: [itemId], references: [id], onDelete: Cascade)
   quantity  Int
+}
+
+model modifier {
+  id             String           @id @default(uuid())
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime?        @updatedAt
+  name           String
+  branch_id       String
+  branch         branch           @relation(fields: [branch_id], references: [id], onDelete: Cascade)
+  modifierOption modifierOption[]
+}
+
+model modifierOption {
+  id         String    @id @default(uuid())
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime? @updatedAt
+  name       String
+  modifierId String
+  modifier   modifier  @relation(fields: [modifierId], references: [id], onDelete: Cascade)
+  price      Int
+  status     Boolean   @default(true)
 }
