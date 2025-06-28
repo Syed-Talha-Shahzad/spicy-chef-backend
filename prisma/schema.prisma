@@ -76,7 +76,18 @@ model item {
   category_id String
   category    category    @relation(fields: [category_id], references: [id], onDelete: Cascade)
   status      Boolean     @default(true)
-  orderItem   orderItem[]
+  variation   variation[]
+}
+
+model variation {
+  id        String      @id @default(uuid())
+  createdAt DateTime    @default(now())
+  updatedAt DateTime?   @updatedAt
+  name      String
+  price     String
+  itemId    String
+  item      item        @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  orderItem orderItem[]
 }
 
 model order {
@@ -96,14 +107,16 @@ model order {
 }
 
 model orderItem {
-  id        String    @id @default(uuid())
-  createdAt DateTime  @default(now())
-  updatedAt DateTime? @updatedAt
-  orderId   String
-  order     order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  itemId    String
-  item      item      @relation(fields: [itemId], references: [id], onDelete: Cascade)
-  quantity  Int
+  id               String          @id @default(uuid())
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime?       @updatedAt
+  orderId          String
+  order            order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  quantity         Int
+  modifierOptionId String?
+  modifierOption   modifierOption? @relation(fields: [modifierOptionId], references: [id], onDelete: Cascade)
+  variationId      String?
+  variation        variation?      @relation(fields: [variationId], references: [id], onDelete: Cascade)
 }
 
 model modifier {
@@ -111,18 +124,19 @@ model modifier {
   createdAt      DateTime         @default(now())
   updatedAt      DateTime?        @updatedAt
   name           String
-  branch_id       String
+  branch_id      String
   branch         branch           @relation(fields: [branch_id], references: [id], onDelete: Cascade)
   modifierOption modifierOption[]
 }
 
 model modifierOption {
-  id         String    @id @default(uuid())
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime? @updatedAt
+  id         String      @id @default(uuid())
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime?   @updatedAt
   name       String
   modifierId String
-  modifier   modifier  @relation(fields: [modifierId], references: [id], onDelete: Cascade)
+  modifier   modifier    @relation(fields: [modifierId], references: [id], onDelete: Cascade)
   price      Int
-  status     Boolean   @default(true)
+  status     Boolean     @default(true)
+  orderItem  orderItem[]
 }

@@ -13,10 +13,9 @@ class categoryService {
         };
       }
 
+      // Check if category name already exists
       const existingCategory = await prisma.category.findFirst({
-        where: {
-          name: name,
-        },
+        where: { name },
       });
 
       if (existingCategory) {
@@ -26,10 +25,9 @@ class categoryService {
         };
       }
 
+      // Check if branch exists
       const existingBranch = await prisma.branch.findFirst({
-        where: {
-          id: branch_id,
-        },
+        where: { id: branch_id },
       });
 
       if (!existingBranch) {
@@ -39,6 +37,7 @@ class categoryService {
         };
       }
 
+      // Create category with nested items and variations
       const category = await prisma.category.create({
         data: {
           name,
@@ -50,16 +49,27 @@ class categoryService {
               price: i.price,
               image: i.image,
               description: i.description,
+              variation: {
+                create: i.variation.map((v) => ({
+                  name: v.name,
+                  price: v.price,
+                })),
+              },
             })),
           },
         },
         include: {
-          item: true,
+          item: {
+            include: {
+              variation: true,
+            },
+          },
         },
       });
 
       return {
         status: true,
+        message: "Category created successfully",
         data: category,
       };
     } catch (error) {
@@ -73,52 +83,60 @@ class categoryService {
   static async updateCategory(req) {
     try {
       const { id, name, image, branch_id, items } = req.body;
-
+  
+      // Check if category exists
       const existingCategory = await prisma.category.findUnique({
         where: { id },
-        include: { item: true },
+        include: {
+          item: {
+            include: { variation: true },
+          },
+        },
       });
-
+  
       if (!existingCategory) {
         return {
           status: false,
           message: "Category not found.",
         };
       }
-
+  
+      // Check for duplicate category name
       const duplicateCategory = await prisma.category.findFirst({
         where: {
           name,
           NOT: { id },
         },
       });
-
+  
       if (duplicateCategory) {
         return {
           status: false,
           message: "A category with this name already exists.",
         };
       }
-
+  
+      // Check branch exists
       const branchExists = await prisma.branch.findUnique({
         where: { id: branch_id },
       });
-
+  
       if (!branchExists) {
         return {
           status: false,
           message: "Invalid branch ID: No matching branch found.",
         };
       }
-
+  
+      // Validate items
       if (!items || !Array.isArray(items) || items.length === 0) {
         return {
           status: false,
           message: "At least one item is required to update the category.",
         };
       }
-
-      // Update category
+  
+      // Update category info
       await prisma.category.update({
         where: { id },
         data: {
@@ -127,62 +145,117 @@ class categoryService {
           branch_id,
         },
       });
-
+  
       const updatedItemIds = [];
-
+  
       for (const i of items) {
         if (i.id) {
-          // Check if item exists under this category
+          // Ensure item exists and belongs to this category
           const existingItem = await prisma.item.findFirst({
             where: {
               id: i.id,
               category_id: id,
             },
           });
-
-          if (existingItem) {
-            const updated = await prisma.item.update({
-              where: { id: i.id },
-              data: {
-                name: i.name,
-                price: i.price,
-                image: i.image,
-                description: i.description,
-              },
-            });
-            updatedItemIds.push(updated.id);
+  
+          if (!existingItem) {
+            return {
+              status: false,
+              message: `Item with ID ${i.id} not found under this category.`,
+            };
           }
+  
+          const updatedItem = await prisma.item.update({
+            where: { id: i.id },
+            data: {
+              name: i.name,
+              price: i.price,
+              image: i.image,
+              description: i.description,
+            },
+          });
+  
+          updatedItemIds.push(updatedItem.id);
+  
+          // Sync variations
+          const existingVariations = await prisma.variation.findMany({
+            where: { itemId: i.id },
+          });
+  
+          const existingVariationIds = existingVariations.map(v => v.id);
+          const incomingVariationIds = (i.variation || [])
+            .filter(v => v.id)
+            .map(v => v.id);
+  
+          const toDelete = existingVariationIds.filter(
+            id => !incomingVariationIds.includes(id)
+          );
+  
+          if (toDelete.length > 0) {
+            await prisma.variation.deleteMany({ where: { id: { in: toDelete } } });
+          }
+  
+          for (const v of i.variation || []) {
+            if (v.id && existingVariationIds.includes(v.id)) {
+              await prisma.variation.update({
+                where: { id: v.id },
+                data: {
+                  name: v.name,
+                  price: v.price,
+                },
+              });
+            } else {
+              await prisma.variation.create({
+                data: {
+                  name: v.name,
+                  price: v.price,
+                  itemId: i.id,
+                },
+              });
+            }
+          }
+  
         } else {
-          const created = await prisma.item.create({
+          // Create new item with variations
+          const createdItem = await prisma.item.create({
             data: {
               name: i.name,
               price: i.price,
               image: i.image,
               description: i.description,
               category_id: id,
+              variation: {
+                create: i.variation.map(v => ({
+                  name: v.name,
+                  price: v.price,
+                })),
+              },
             },
           });
-          updatedItemIds.push(created.id);
+  
+          updatedItemIds.push(createdItem.id);
         }
       }
-
-      // Delete removed items
+  
       await prisma.item.deleteMany({
         where: {
           category_id: id,
-          NOT: {
-            id: { in: updatedItemIds },
+          NOT: { id: { in: updatedItemIds } },
+        },
+      });
+  
+      const finalCategory = await prisma.category.findUnique({
+        where: { id },
+        include: {
+          item: {
+            include: { variation: true },
           },
         },
       });
-
-      const finalCategory = await prisma.category.findUnique({
-        where: { id },
-        include: { item: true },
-      });
-
+  
       return {
         status: true,
+        message: "Category updated successfully.",
         data: finalCategory,
       };
     } catch (error) {
@@ -192,6 +265,7 @@ class categoryService {
       };
     }
   }
+  
 
   static async categoryDetails(req) {
     try {
@@ -200,7 +274,11 @@ class categoryService {
       const category = await prisma.category.findUnique({
         where: { id },
         include: {
-          item: true,
+          item: {
+            include: {
+              variation: true,
+            },
+          },
         },
       });
 
@@ -273,7 +351,11 @@ class categoryService {
       // Fetch all categories for the branch
       const categories = await prisma.category.findMany({
         where: { branch_id },
-        include: { item: true },
+        include: {
+          item: {
+            include: { variation: true },
+          },
+        },
         orderBy: { createdAt: "desc" },
       });
 
@@ -291,33 +373,45 @@ class categoryService {
 
   static async createItem(req) {
     try {
-      const { name, price, image, description, category_id } = req.body;
+      const { name, price, image, description, category_id, variation } =
+        req.body;
 
       const categoryExists = await prisma.category.findUnique({
         where: { id: category_id },
       });
-
       if (!categoryExists) {
         return {
           status: false,
-          message: "Invalid category_id. Category not found",
+          message: "Category does not exist",
         };
       }
 
-      const item = await prisma.item.create({
+      const createdItem = await prisma.item.create({
         data: {
           name,
           price,
           image,
           description,
           category_id,
+          variation:
+            variation && Array.isArray(variation)
+              ? {
+                  create: variation.map((v) => ({
+                    name: v.name,
+                    price: v.price,
+                  })),
+                }
+              : undefined,
+        },
+        include: {
+          variation: true,
         },
       });
 
       return {
         status: true,
         message: "Item created successfully",
-        data: item,
+        data: createdItem,
       };
     } catch (error) {
       return {
@@ -347,6 +441,7 @@ class categoryService {
         orderBy: { createdAt: "desc" },
         include: {
           category: true,
+          variation: true,
         },
       });
 
@@ -365,10 +460,31 @@ class categoryService {
 
   static async updateItem(req) {
     try {
-     
       const { id } = req.params;
-      const { name, price, image, description, category_id, status } = req.body;
+      const {
+        name,
+        price,
+        image,
+        description,
+        category_id,
+        status,
+        variation, // <-- this is the array of variations
+      } = req.body;
 
+      // Check if item exists
+      const existingItem = await prisma.item.findUnique({
+        where: { id },
+        include: { variation: true }, // Use correct relation name
+      });
+
+      if (!existingItem) {
+        return {
+          status: false,
+          message: "Item not found",
+        };
+      }
+
+      // Optional: Validate category_id
       if (category_id) {
         const categoryExists = await prisma.category.findUnique({
           where: { id: category_id },
@@ -382,18 +498,8 @@ class categoryService {
         }
       }
 
-      const existingItem = await prisma.item.findFirst({
-        where: { id },
-      });
-      
-      if (!existingItem) {
-        return {
-          status: false,
-          message: "Item not found",
-        };
-      }
-
-      const updatedItem = await prisma.item.update({
+      // Update item basic fields
+      await prisma.item.update({
         where: { id },
         data: {
           name,
@@ -405,10 +511,53 @@ class categoryService {
         },
       });
 
+      // Prepare variation syncing
+      const existingVariationIds = existingItem.variation.map((v) => v.id);
+      const incomingVariationIds = (variation || [])
+        .filter((v) => v.id)
+        .map((v) => v.id);
+
+      // 1. Delete removed variations
+      const toDelete = existingVariationIds.filter(
+        (existingId) => !incomingVariationIds.includes(existingId)
+      );
+
+      if (toDelete.length > 0) {
+        await prisma.variation.deleteMany({
+          where: { id: { in: toDelete } },
+        });
+      }
+
+      // 2. Create or update variations
+      for (const v of variation || []) {
+        if (v.id && existingVariationIds.includes(v.id)) {
+          await prisma.variation.update({
+            where: { id: v.id },
+            data: {
+              name: v.name,
+              price: v.price,
+            },
+          });
+        } else {
+          await prisma.variation.create({
+            data: {
+              name: v.name,
+              price: v.price,
+              itemId: id,
+            },
+          });
+        }
+      }
+
+      const updatedItemWithVariations = await prisma.item.findUnique({
+        where: { id },
+        include: { variation: true },
+      });
+
       return {
         status: true,
         message: "Item updated successfully",
-        data: updatedItem,
+        data: updatedItemWithVariations,
       };
     } catch (error) {
       return {
