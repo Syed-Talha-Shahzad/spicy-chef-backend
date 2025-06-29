@@ -33,6 +33,7 @@ model branch {
   createdAt DateTime   @default(now())
   updatedAt DateTime?  @updatedAt
   name      String
+  address   String?
   status    Boolean    @default(true)
   category  category[]
   modifier  modifier[]

@@ -1,7 +1,8 @@
 import { check, query  } from "express-validator";
 
-export const nameValidation = [
+export const branchValidation = [
     check("name").notEmpty().withMessage("Name is required"),
+    check("address").notEmpty().withMessage("Address is required"),
 ]
 
 export const branchIdValidation = [

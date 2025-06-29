@@ -1,13 +1,13 @@
 import express from "express"
 const router = express.Router();
 import { branchController } from "../controllers/index.js"
-import { nameValidation } from "../validations/generalValidation.js";
+import { branchValidation } from "../validations/generalValidation.js";
 import { checkValidationResult, checkAdmin } from "../middlewares/index.js"
 
 router.post(
     "/",
     checkAdmin,
-    nameValidation,
+    branchValidation,
     checkValidationResult,
     branchController.createBranch
 );
@@ -18,7 +18,7 @@ router.get("/", branchController.listBranches);
 router.put(
   "/:id",
   checkAdmin,
-  nameValidation,
+  branchValidation,
   checkValidationResult,
   branchController.updateBranch
 );
