@@ -23,8 +23,13 @@ export const createcategoryValidation = [
     .isArray({ min: 1 })
     .withMessage("A category must include at least one item"),
 
-  body("items.*.name").notEmpty().withMessage("Item name is required"),
-  body("items.*.price").notEmpty().withMessage("Item price is required"),
+  body("items.*.name")
+    .notEmpty()
+    .withMessage("Item name is required"),
+
+  body("items.*.price")
+    .notEmpty()
+    .withMessage("Item price is required"),
 
   body("items.*.image")
     .notEmpty()
@@ -38,19 +43,33 @@ export const createcategoryValidation = [
     .withMessage("Description must be a string"),
 
   body("items.*.variation")
-    .isArray({ min: 1 })
-    .withMessage("Each item must include at least one variation"),
+    .optional()
+    .isArray()
+    .withMessage("Variation must be an array if provided"),
 
   body("items.*.variation.*.name")
+    .if(body("items.*.variation").exists())
     .notEmpty()
-    .withMessage("Variation name is required for each item"),
+    .withMessage("Variation name is required"),
 
   body("items.*.variation.*.price")
+    .if(body("items.*.variation").exists())
     .notEmpty()
-    .withMessage("Variation price is required for each item")
+    .withMessage("Variation price is required")
     .matches(/^\d+(\.\d{1,2})?$/)
     .withMessage("Variation price must be a valid number"),
+
+  body("items.*.modifiers")
+    .optional()
+    .isArray()
+    .withMessage("Modifiers must be an array if provided"),
+
+  body("items.*.modifiers.*")
+    .optional()
+    .isUUID()
+    .withMessage("Each modifier must be a valid UUID"),
 ];
+
 
 export const updateCategoryValidation = [
   body("id")
@@ -101,18 +120,31 @@ export const updateCategoryValidation = [
     .withMessage("Description must be a string."),
 
   body("items.*.variation")
-    .isArray({ min: 1 })
-    .withMessage("Each item must include at least one variation."),
+    .optional()
+    .isArray()
+    .withMessage("Variation must be an array."),
 
   body("items.*.variation.*.name")
+    .if(body("items.*.variation").exists())
     .notEmpty()
     .withMessage("Variation name is required for each item."),
 
   body("items.*.variation.*.price")
+    .if(body("items.*.variation").exists())
     .notEmpty()
-    .withMessage("Variation price is required for each item.")
+    .withMessage("Variation price is required.")
     .matches(/^\d+(\.\d{1,2})?$/)
     .withMessage("Variation price must be a valid number."),
+
+  body("items.*.modifiers")
+    .optional()
+    .isArray()
+    .withMessage("Modifiers must be an array."),
+
+  body("items.*.modifiers.*")
+    .optional()
+    .isUUID()
+    .withMessage("Each modifier ID must be a valid UUID."),
 ];
 
 
@@ -141,8 +173,14 @@ export const createItemValidation = [
     .withMessage("Category ID must be a valid UUID"),
 
   body("variation")
-    .isArray({ min: 1 })
-    .withMessage("Variation must be a non-empty array"),
+    .optional()
+    .isArray()
+    .withMessage("Variation must be an array"),
+
+  body("variation.*.id")
+    .optional()
+    .isUUID()
+    .withMessage("Each Variation ID must be a valid UUID"),
 
   body("variation.*.name")
     .notEmpty()
@@ -155,6 +193,12 @@ export const createItemValidation = [
     .withMessage("Variation price is required")
     .matches(/^\d+(\.\d{1,2})?$/)
     .withMessage("Variation price must be a valid number (e.g., 9.99)"),
+
+  body("modifiers")
+    .optional()
+    .isArray()
+    .withMessage("Modifiers must be an array"),
+
 ];
 
 export const createModifierValidation = [

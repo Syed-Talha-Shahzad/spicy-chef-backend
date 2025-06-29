@@ -66,17 +66,18 @@ model category {
 }
 
 model item {
-  id          String      @id @default(uuid())
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime?   @updatedAt
-  name        String
-  price       String
-  image       String?
-  description String?
-  category_id String
-  category    category    @relation(fields: [category_id], references: [id], onDelete: Cascade)
-  status      Boolean     @default(true)
-  variation   variation[]
+  id           String         @id @default(uuid())
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime?      @updatedAt
+  name         String
+  price        String
+  image        String?
+  description  String?
+  category_id  String
+  category     category       @relation(fields: [category_id], references: [id], onDelete: Cascade)
+  status       Boolean        @default(true)
+  variation    variation[]
+  itemModifier itemModifier[]
 }
 
 model variation {
@@ -127,6 +128,7 @@ model modifier {
   branch_id      String
   branch         branch           @relation(fields: [branch_id], references: [id], onDelete: Cascade)
   modifierOption modifierOption[]
+  itemModifier   itemModifier[]
 }
 
 model modifierOption {
@@ -139,4 +141,15 @@ model modifierOption {
   price      Int
   status     Boolean     @default(true)
   orderItem  orderItem[]
+}
+
+model itemModifier {
+  id         String @id @default(uuid())
+  itemId     String
+  modifierId String
+
+  item     item     @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  modifier modifier @relation(fields: [modifierId], references: [id], onDelete: Cascade)
+
+  @@unique([itemId, modifierId]) // prevent duplicates
 }
