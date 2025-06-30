@@ -79,6 +79,7 @@ model item {
   status       Boolean        @default(true)
   variation    variation[]
   itemModifier itemModifier[]
+  orderItem    orderItem[]
 }
 
 model variation {
@@ -108,18 +109,20 @@ model order {
   items         orderItem[]
 }
 
-model orderItem {
-  id               String          @id @default(uuid())
-  createdAt        DateTime        @default(now())
-  updatedAt        DateTime?       @updatedAt
-  orderId          String
-  order            order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  quantity         Int
-  modifierOptionId String?
-  modifierOption   modifierOption? @relation(fields: [modifierOptionId], references: [id], onDelete: Cascade)
-  variationId      String?
-  variation        variation?      @relation(fields: [variationId], references: [id], onDelete: Cascade)
-}
+  model orderItem {
+    id               String          @id @default(uuid())
+    createdAt        DateTime        @default(now())
+    updatedAt        DateTime?       @updatedAt
+    orderId          String
+    order            order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+    quantity         Int
+    itemId           String?
+    item             item?            @relation(fields: [itemId], references: [id], onDelete: Cascade)
+    modifierOptionId String?
+    modifierOption   modifierOption? @relation(fields: [modifierOptionId], references: [id], onDelete: Cascade)
+    variationId      String?
+    variation        variation?      @relation(fields: [variationId], references: [id], onDelete: Cascade)
+  }
 
 model modifier {
   id             String           @id @default(uuid())

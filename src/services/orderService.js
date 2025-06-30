@@ -11,7 +11,6 @@ class orderService {
   static async createOrder(req, res) {
     const {
       items,
-      modifiers = [],
       orderType,
       paymentType,
       fullName,
@@ -22,74 +21,86 @@ class orderService {
   
     try {
       if (!items || !Array.isArray(items) || items.length === 0) {
-        return res.json({
+        return {
           status: false,
           message: "At least one item is required in the order.",
-        });
-      }
-  
-      const variationIds = items.map((i) => i.variationId);
-      const modifierOptionIds = modifiers.map((m) => m.modifierOptionId);
-  
-      const dbVariations = await prisma.variation.findMany({
-        where: { id: { in: variationIds } },
-        select: { id: true, price: true },
-      });
-  
-      const dbModifiers = await prisma.modifierOption.findMany({
-        where: { id: { in: modifierOptionIds } },
-        select: { id: true, price: true },
-      });
-  
-      const invalidVariationIds = variationIds.filter(
-        (id) => !dbVariations.find((v) => v.id === id)
-      );
-      const invalidModifierOptionIds = modifierOptionIds.filter(
-        (id) => !dbModifiers.find((m) => m.id === id)
-      );
-  
-      if (invalidVariationIds.length > 0 || invalidModifierOptionIds.length > 0) {
-        const allInvalid = [...invalidVariationIds, ...invalidModifierOptionIds];
-        return{
-          status: false,
-          message: `Invalid ID(s): ${allInvalid.join(", ")}`,
         };
       }
   
+      const ids = items.map((i) => i.id);
+  
+      // Fetch all possible IDs
+      const [dbVariations, dbModifierOptions, dbItems] = await Promise.all([
+        prisma.variation.findMany({
+          where: { id: { in: ids } },
+          include: { item: true },
+        }),
+        prisma.modifierOption.findMany({
+          where: { id: { in: ids } },
+          include: {
+            modifier: {
+              include: {
+                itemModifier: {
+                  include: {
+                    item: true,
+                  },
+                },
+              },
+            },
+          },
+        }),
+        prisma.item.findMany({
+          where: { id: { in: ids } },
+        }),
+      ]);
+  
+      // Track all valid IDs
+      const validIds = new Set([
+        ...dbVariations.map((v) => v.id),
+        ...dbModifierOptions.map((m) => m.id),
+        ...dbItems.map((i) => i.id),
+      ]);
+  
+      const invalidIds = ids.filter((id) => !validIds.has(id));
+      if (invalidIds.length > 0) {
+        return {
+          status: false,
+          message: `Invalid ID(s): ${invalidIds.join(", ")}`,
+        };
+      }
+  
+      // Build order items and calculate total
+      let totalAmount = 0;
       const orderItems = [];
   
       for (const i of items) {
-        const variation = dbVariations.find((v) => v.id === i.variationId);
-        orderItems.push({
-          quantity: i.quantity,
-          variation: {
-            connect: { id: variation.id },
-          },
-        });
+        const variation = dbVariations.find((v) => v.id === i.id);
+        const modifier = dbModifierOptions.find((m) => m.id === i.id);
+        const baseItem = dbItems.find((it) => it.id === i.id);
+  
+        if (variation) {
+          totalAmount += variation.price * i.quantity;
+          orderItems.push({
+            quantity: i.quantity,
+            variationId: variation.id,
+          });
+        } else if (modifier) {
+          const relatedItem = modifier.modifier.itemModifier[0]?.item;
+          totalAmount += modifier.price * i.quantity;
+          orderItems.push({
+            quantity: i.quantity,
+            modifierOptionId: modifier.id,
+          });
+        } else if (baseItem) {
+          totalAmount += baseItem.price * i.quantity;
+          orderItems.push({
+            quantity: i.quantity,
+            itemId: baseItem.id,
+          });
+        }
       }
   
-      for (const m of modifiers) {
-        const modifier = dbModifiers.find((mo) => mo.id === m.modifierOptionId);
-        orderItems.push({
-          quantity: m.quantity,
-          modifierOption: {
-            connect: { id: modifier.id },
-          },
-        });
-      }
-  
-      let totalAmount = 0;
-  
-      for (const i of items) {
-        const variation = dbVariations.find((v) => v.id === i.variationId);
-        totalAmount += variation.price * i.quantity;
-      }
-  
-      for (const m of modifiers) {
-        const mod = dbModifiers.find((mo) => mo.id === m.modifierOptionId);
-        totalAmount += mod.price * m.quantity;
-      }
-  
+      // Create order
       const order = await prisma.order.create({
         data: {
           orderId: generateOrderCode(),
@@ -108,56 +119,13 @@ class orderService {
         include: {
           items: {
             include: {
+              item: true,
               variation: true,
               modifierOption: true,
             },
           },
         },
       });
-  
-      if (paymentType === "STRIPE") {
-        const stripeLineItems = [];
-  
-        for (const i of items) {
-          const variation = dbVariations.find((v) => v.id === i.variationId);
-          stripeLineItems.push({
-            price_data: {
-              currency: "usd",
-              product_data: { name: `Item: ${variation.id}` },
-              unit_amount: variation.price * 100,
-            },
-            quantity: i.quantity,
-          });
-        }
-  
-        for (const m of modifiers) {
-          const mod = dbModifiers.find((mo) => mo.id === m.modifierOptionId);
-          stripeLineItems.push({
-            price_data: {
-              currency: "usd",
-              product_data: { name: `Modifier: ${mod.id}` },
-              unit_amount: mod.price * 100,
-            },
-            quantity: m.quantity,
-          });
-        }
-  
-        const session = await stripe.checkout.sessions.create({
-          payment_method_types: ["card"],
-          mode: "payment",
-          line_items: stripeLineItems,
-          success_url: `${process.env.FRONTEND_URL}?orderId=${order.id}`,
-          cancel_url: `${process.env.FRONTEND_URL}`,
-        });
-  
-        return {
-          status: true,
-          message: "Stripe Checkout session created",
-          data: {
-            checkoutUrl: session.url,
-          },
-        };
-      }
   
       return {
         status: true,
@@ -172,6 +140,7 @@ class orderService {
       };
     }
   }
+  
   
   
   static async orderListing(req) {

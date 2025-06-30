@@ -40,32 +40,15 @@ export const createOrderValidation = [
     .isArray({ min: 1 })
     .withMessage("At least one item is required"),
 
-  body("items.*.variationId")
+  body("items.*.id")
     .notEmpty()
-    .withMessage("Each item must have a variationId")
+    .withMessage("Each item must have a id")
     .isUUID()
-    .withMessage("Each variationId must be a valid UUID"),
+    .withMessage("Each item id must be a valid UUID"),
 
   body("items.*.quantity")
     .notEmpty()
     .withMessage("Each item must have a quantity")
-    .isInt({ min: 1 })
-    .withMessage("Quantity must be a positive integer"),
-
-  body("modifiers")
-    .optional()
-    .isArray()
-    .withMessage("Modifiers must be an array if provided"),
-
-  body("modifiers.*.modifierOptionId")
-    .notEmpty()
-    .withMessage("Each modifier must have a modifierOptionId")
-    .isUUID()
-    .withMessage("modifierOptionId must be a valid UUID"),
-
-  body("modifiers.*.quantity")
-    .notEmpty()
-    .withMessage("Each modifier must have a quantity")
     .isInt({ min: 1 })
     .withMessage("Quantity must be a positive integer"),
 ];
