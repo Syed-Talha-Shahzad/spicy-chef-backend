@@ -8,8 +8,7 @@ export const createcategoryValidation = [
     .withMessage("Category name must be a string"),
 
   body("image")
-    .notEmpty()
-    .withMessage("Category image is required")
+    .optional()
     .isURL()
     .withMessage("Image must be a valid URL"),
 
@@ -32,8 +31,7 @@ export const createcategoryValidation = [
     .withMessage("Item price is required"),
 
   body("items.*.image")
-    .notEmpty()
-    .withMessage("Item image is required")
+    .optional()
     .isURL()
     .withMessage("Item image must be a valid URL"),
 
@@ -85,8 +83,7 @@ export const updateCategoryValidation = [
     .withMessage("Category name must be a string."),
 
   body("image")
-    .notEmpty()
-    .withMessage("Category image is required.")
+    .optional()
     .isURL()
     .withMessage("Category image must be a valid URL."),
 
@@ -109,8 +106,7 @@ export const updateCategoryValidation = [
   body("items.*.price").notEmpty().withMessage("Item price is required."),
 
   body("items.*.image")
-    .notEmpty()
-    .withMessage("Item image is required.")
+    .optional()
     .isURL()
     .withMessage("Item image must be a valid URL."),
 
