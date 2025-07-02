@@ -58,6 +58,7 @@ model category {
   id        String    @id @default(uuid())
   createdAt DateTime  @default(now())
   updatedAt DateTime? @updatedAt
+  is_deal  Boolean   @default(false)
   branch_id String
   branch    branch    @relation(fields: [branch_id], references: [id], onDelete: Cascade)
   name      String

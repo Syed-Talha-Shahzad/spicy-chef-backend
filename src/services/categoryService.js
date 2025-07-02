@@ -3,7 +3,7 @@ const prisma = new PrismaClient();
 
 class categoryService {
   static async createCategory(req) {
-    const { name, image, items, branch_id } = req.body;
+    const { name, image, items, branch_id, is_deal } = req.body;
 
     try {
       if (!items || !Array.isArray(items) || items.length === 0) {
@@ -67,6 +67,7 @@ class categoryService {
         data: {
           name,
           image,
+          is_deal,
           branch_id,
         },
       });
@@ -140,7 +141,7 @@ class categoryService {
 
   static async updateCategory(req) {
     try {
-      const { id, name, image, branch_id, items } = req.body;
+      const { id, name, image, branch_id, items, is_deal } = req.body;
 
       const existingCategory = await prisma.category.findUnique({
         where: { id },
@@ -192,7 +193,7 @@ class categoryService {
       // Update category
       await prisma.category.update({
         where: { id },
-        data: { name, image, branch_id },
+        data: { name, image, branch_id, is_deal },
       });
 
       const updatedItemIds = [];

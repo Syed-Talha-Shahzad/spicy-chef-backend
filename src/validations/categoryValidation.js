@@ -7,10 +7,12 @@ export const createcategoryValidation = [
     .isString()
     .withMessage("Category name must be a string"),
 
-  body("image")
+  body("is_deal")
     .optional()
-    .isURL()
-    .withMessage("Image must be a valid URL"),
+    .isBoolean()
+    .withMessage("is_deal must be a boolean value"),
+
+  body("image").optional().isURL().withMessage("Image must be a valid URL"),
 
   body("branch_id")
     .notEmpty()
@@ -22,13 +24,9 @@ export const createcategoryValidation = [
     .isArray({ min: 1 })
     .withMessage("A category must include at least one item"),
 
-  body("items.*.name")
-    .notEmpty()
-    .withMessage("Item name is required"),
+  body("items.*.name").notEmpty().withMessage("Item name is required"),
 
-  body("items.*.price")
-    .notEmpty()
-    .withMessage("Item price is required"),
+  body("items.*.price").notEmpty().withMessage("Item price is required"),
 
   body("items.*.image")
     .optional()
@@ -68,13 +66,17 @@ export const createcategoryValidation = [
     .withMessage("Each modifier must be a valid UUID"),
 ];
 
-
 export const updateCategoryValidation = [
   body("id")
     .notEmpty()
     .withMessage("Category ID is required.")
     .isUUID()
     .withMessage("Category ID must be a valid UUID."),
+
+  body("is_deal")
+    .optional()
+    .isBoolean()
+    .withMessage("is_deal must be a boolean value"),
 
   body("name")
     .notEmpty()
@@ -143,7 +145,6 @@ export const updateCategoryValidation = [
     .withMessage("Each modifier ID must be a valid UUID."),
 ];
 
-
 export const createItemValidation = [
   body("name")
     .notEmpty()
@@ -194,7 +195,6 @@ export const createItemValidation = [
     .optional()
     .isArray()
     .withMessage("Modifiers must be an array"),
-
 ];
 
 export const createModifierValidation = [
