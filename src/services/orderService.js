@@ -1,5 +1,7 @@
 import Stripe from "stripe";
+import jwt from "jsonwebtoken";
 import { PrismaClient } from "@prisma/client";
+import { ORDER_STATUS, USER_ROLE } from "../constants/index.js";
 const prisma = new PrismaClient();
 const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
 
@@ -18,7 +20,36 @@ class orderService {
       phoneNo,
       postCode,
     } = req.body;
-  
+
+    let user = null;
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith("Bearer ")) {
+      try {
+        const token = authHeader.split(" ")[1];
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+        const fetchedUser = await prisma.user.findFirst({
+          where: { id: decoded.id },
+        });
+
+        if (fetchedUser && fetchedUser.status !== false) {
+          user = fetchedUser;
+        }
+        if (!user) {
+          return {
+            status: false,
+            message: "User not found or account is blocked.",
+          };
+        }
+      } catch (error) {
+        console.error("Token verification error:", error.message);
+        return {
+          status: false,
+          message: "Invalid or expired token.",
+        };
+      }
+    }
+
     try {
       if (!items || !Array.isArray(items) || items.length === 0) {
         return {
@@ -26,10 +57,9 @@ class orderService {
           message: "At least one item is required in the order.",
         };
       }
-  
+
       const ids = items.map((i) => i.id);
-  
-      // Fetch all possible IDs
+
       const [dbVariations, dbModifierOptions, dbItems] = await Promise.all([
         prisma.variation.findMany({
           where: { id: { in: ids } },
@@ -41,9 +71,7 @@ class orderService {
             modifier: {
               include: {
                 itemModifier: {
-                  include: {
-                    item: true,
-                  },
+                  include: { item: true },
                 },
               },
             },
@@ -53,14 +81,13 @@ class orderService {
           where: { id: { in: ids } },
         }),
       ]);
-  
-      // Track all valid IDs
+
       const validIds = new Set([
         ...dbVariations.map((v) => v.id),
         ...dbModifierOptions.map((m) => m.id),
         ...dbItems.map((i) => i.id),
       ]);
-  
+
       const invalidIds = ids.filter((id) => !validIds.has(id));
       if (invalidIds.length > 0) {
         return {
@@ -68,22 +95,35 @@ class orderService {
           message: `Invalid ID(s): ${invalidIds.join(", ")}`,
         };
       }
-  
-      // Build order items and calculate total
+
       let totalAmount = 0;
       const orderItems = [];
-  
+      const stripeLineItems = [];
+
       for (const i of items) {
         const variation = dbVariations.find((v) => v.id === i.id);
         const modifier = dbModifierOptions.find((m) => m.id === i.id);
         const baseItem = dbItems.find((it) => it.id === i.id);
-  
+
         if (variation) {
           totalAmount += variation.price * i.quantity;
           orderItems.push({
             quantity: i.quantity,
             variationId: variation.id,
           });
+
+          if (paymentType === "STRIPE") {
+            stripeLineItems.push({
+              price_data: {
+                currency: "usd",
+                product_data: {
+                  name: `Variation: ${variation.item.name} - ${variation.name}`,
+                },
+                unit_amount: parseInt(variation.price) * 100,
+              },
+              quantity: i.quantity,
+            });
+          }
         } else if (modifier) {
           const relatedItem = modifier.modifier.itemModifier[0]?.item;
           totalAmount += modifier.price * i.quantity;
@@ -91,16 +131,43 @@ class orderService {
             quantity: i.quantity,
             modifierOptionId: modifier.id,
           });
+
+          if (paymentType === "STRIPE") {
+            stripeLineItems.push({
+              price_data: {
+                currency: "usd",
+                product_data: {
+                  name: `Modifier: ${modifier.name} (${
+                    relatedItem?.name || ""
+                  })`,
+                },
+                unit_amount: parseInt(modifier.price) * 100,
+              },
+              quantity: i.quantity,
+            });
+          }
         } else if (baseItem) {
           totalAmount += baseItem.price * i.quantity;
           orderItems.push({
             quantity: i.quantity,
             itemId: baseItem.id,
           });
+
+          if (paymentType === "STRIPE") {
+            stripeLineItems.push({
+              price_data: {
+                currency: "usd",
+                product_data: {
+                  name: `Item: ${baseItem.name}`,
+                },
+                unit_amount: parseInt(baseItem.price) * 100,
+              },
+              quantity: i.quantity,
+            });
+          }
         }
       }
-  
-      // Create order
+
       const order = await prisma.order.create({
         data: {
           orderId: generateOrderCode(),
@@ -108,6 +175,7 @@ class orderService {
           paymentType,
           fullName,
           address,
+          userId: user?.id ?? null,
           phoneNo,
           postCode,
           paymentStatus: "PENDING",
@@ -126,7 +194,27 @@ class orderService {
           },
         },
       });
-  
+
+      if (paymentType === "STRIPE") {
+        console.log("Creating Stripe session for order:", order.id);
+        const session = await stripe.checkout.sessions.create({
+          payment_method_types: ["card"],
+          mode: "payment",
+          line_items: stripeLineItems,
+          success_url: `${process.env.FRONTEND_URL}?orderId=${order.id}`,
+          cancel_url: `${process.env.FRONTEND_URL}`,
+        });
+
+        return {
+          status: true,
+          message: "Stripe session created",
+          data: {
+            session: session.url,
+            order: order,
+          },
+        };
+      }
+
       return {
         status: true,
         message: "Order placed successfully",
@@ -140,9 +228,7 @@ class orderService {
       };
     }
   }
-  
-  
-  
+
   static async orderListing(req) {
     try {
       const { filter } = req.query;
@@ -157,11 +243,42 @@ class orderService {
       }
 
       const orders = await prisma.order.findMany({
-        where,
         orderBy: { createdAt: "desc" },
         include: {
           items: {
-            include: { variation: true, modifierOption: true },
+            include: {
+              item: true,
+              variation: {
+                include: {
+                  item: {
+                    select: {
+                      name: true,
+                      price: true,
+                      image: true,
+                      description: true,
+                    },
+                  },
+                },
+              },
+              modifierOption: {
+                include: {
+                  modifier: {
+                    include: {
+                      itemModifier: {
+                        include: {
+                          item: {
+                            select: {
+                              id: true,
+                              name: true,
+                            },
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
           },
         },
       });
@@ -179,7 +296,7 @@ class orderService {
     }
   }
 
-  static async updateOrderStatus(req) {
+  static async updateOrderPaymentStatus(req) {
     try {
       const { id } = req.params;
 
@@ -203,6 +320,110 @@ class orderService {
         status: true,
         message: "Order status updated to PAID",
         data: updatedOrder,
+      };
+    } catch (error) {
+      return {
+        status: false,
+        message: error.message,
+      };
+    }
+  }
+
+  static async userOrders(req) {
+    try {
+      const orders = await prisma.order.findMany({
+        where: { userId: req.user.id },
+        orderBy: { createdAt: "desc" },
+        include: {
+          items: {
+            include: {
+              item: true,
+              variation: {
+                include: {
+                  item: {
+                    select: {
+                      name: true,
+                      price: true,
+                      image: true,
+                      description: true,
+                    },
+                  },
+                },
+              },
+              modifierOption: {
+                include: {
+                  modifier: {
+                    include: {
+                      itemModifier: {
+                        include: {
+                          item: {
+                            select: {
+                              id: true,
+                              name: true,
+                            },
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      });
+
+      return {
+        status: true,
+        message: "User orders fetched successfully",
+        data: {
+          orders: orders,
+        },
+      };
+    } catch (error) {
+      return {
+        status: false,
+        message: error.message,
+      };
+    }
+  }
+
+  static async orderStatusUpdate(req) {
+    try {
+      const { id } = req.params;
+      const { status } = req.body;
+
+      const existingOrder = await prisma.order.findFirst({
+        where: { id },
+      }); 
+      if (!existingOrder) { 
+        return {
+          status: false, 
+          message: "Order not found",
+        };
+      }
+      if (existingOrder.status === ORDER_STATUS.ACCEPTED) {
+        return {
+          status: false,
+          message: "Order is already accepted",
+        };
+      } 
+
+      if (existingOrder.status === ORDER_STATUS.REJECTED) {
+        return {
+          status: false,
+          message: "Order is already rejected",
+        };
+      } 
+
+      await prisma.order.update({
+        where: { id },
+        data: { status },
+      });
+
+      return {
+        status: false,
+        message: "Order status updated successfully",
       };
     } catch (error) {
       return {

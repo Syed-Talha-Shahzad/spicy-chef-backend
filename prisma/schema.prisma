@@ -28,6 +28,13 @@ enum paymentStatus {
   PAID
 }
 
+enum orderStatus {
+  PENDING
+  ACCEPTED
+  COMPLETED
+  REJECTED
+}
+
 model branch {
   id        String     @id @default(uuid())
   createdAt DateTime   @default(now())
@@ -52,13 +59,14 @@ model user {
   phoneNo   String?
   role      userRole  @default(CLIENT)
   status    Boolean   @default(true)
+  order     order[]
 }
 
 model category {
   id        String    @id @default(uuid())
   createdAt DateTime  @default(now())
   updatedAt DateTime? @updatedAt
-  is_deal  Boolean   @default(false)
+  is_deal   Boolean   @default(false)
   branch_id String
   branch    branch    @relation(fields: [branch_id], references: [id], onDelete: Cascade)
   name      String
@@ -96,6 +104,8 @@ model variation {
 
 model order {
   id            String        @id @default(uuid())
+  userId        String?
+  user          user?         @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt     DateTime      @default(now())
   updatedAt     DateTime?     @updatedAt
   orderId       String        @unique
@@ -105,25 +115,26 @@ model order {
   phoneNo       String
   postCode      String?
   address       String
+  status        orderStatus        @default(PENDING)
   paymentStatus paymentStatus @default(PENDING)
   totalAmount   Int
   items         orderItem[]
 }
 
-  model orderItem {
-    id               String          @id @default(uuid())
-    createdAt        DateTime        @default(now())
-    updatedAt        DateTime?       @updatedAt
-    orderId          String
-    order            order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
-    quantity         Int
-    itemId           String?
-    item             item?            @relation(fields: [itemId], references: [id], onDelete: Cascade)
-    modifierOptionId String?
-    modifierOption   modifierOption? @relation(fields: [modifierOptionId], references: [id], onDelete: Cascade)
-    variationId      String?
-    variation        variation?      @relation(fields: [variationId], references: [id], onDelete: Cascade)
-  }
+model orderItem {
+  id               String          @id @default(uuid())
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime?       @updatedAt
+  orderId          String
+  order            order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  quantity         Int
+  itemId           String?
+  item             item?           @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  modifierOptionId String?
+  modifierOption   modifierOption? @relation(fields: [modifierOptionId], references: [id], onDelete: Cascade)
+  variationId      String?
+  variation        variation?      @relation(fields: [variationId], references: [id], onDelete: Cascade)
+}
 
 model modifier {
   id             String           @id @default(uuid())

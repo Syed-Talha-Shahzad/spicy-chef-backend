@@ -12,10 +12,21 @@ class orderController {
     return responseUtility.sendResponse(res, result);
   }
 
-  static async updateOrderStatus(req, res) {
-    const result = await orderService.updateOrderStatus(req);
+  static async updateOrderPaymentStatus(req, res) {
+    const result = await orderService.updateOrderPaymentStatus(req);
     return responseUtility.sendResponse(res, result);
   }
+
+  static async userOrders(req, res) {
+    const result = await orderService.userOrders(req);
+    return responseUtility.sendResponse(res, result);
+  }
+
+  static async orderStatusUpdate(req, res) {
+    const result = await orderService.orderStatusUpdate(req);
+    return responseUtility.sendResponse(res, result);
+  }
+  
 
 }
 

@@ -52,3 +52,11 @@ export const createOrderValidation = [
     .isInt({ min: 1 })
     .withMessage("Quantity must be a positive integer"),
 ];
+
+export const updateOrderStatusValidation = [
+  body("status")
+    .notEmpty()
+    .withMessage("Status is required")
+    .isIn(["ACCEPTED", "REJECTED"])
+    .withMessage("Status must be ACCEPTED or REJECTED"),
+];
