@@ -91,6 +91,30 @@ class authService {
       };
     }
   }
+
+  static async profile(req) {
+    try {
+      const userId = req.user.id;
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+      });
+      if (!user) {
+        return {
+          status: false,
+          message: "User not found",
+        };
+      }
+      return {
+        status: true,
+        data: user,
+      };
+    } catch (error) {
+      return {
+        status: false,
+        message: error.message,
+      };
+    }
+  }
 }
 
 export default authService;

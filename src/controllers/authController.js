@@ -11,6 +11,13 @@ class authController {
     const result = await authService.signUp(req);
     return responseUtility.sendResponse(res, result);
   }
+
+  static async profile(req, res) {
+    const result = await authService.profile(req);
+    return responseUtility.sendResponse(res, result);
+  }
+
+  
 }
 
 export default authController;
