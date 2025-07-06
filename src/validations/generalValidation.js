@@ -1,14 +1,27 @@
-import { check, query  } from "express-validator";
+import { check, query } from "express-validator";
 
 export const branchValidation = [
-    check("name").notEmpty().withMessage("Name is required"),
-    check("address").notEmpty().withMessage("Address is required"),
-]
+  check("name").notEmpty().withMessage("Name is required"),
+  check("address").notEmpty().withMessage("Address is required"),
+];
 
 export const branchIdValidation = [
-    query("branch_id")
-      .notEmpty()
-      .withMessage("branch_id is required")
-      .isUUID()
-      .withMessage("branch_id must be a valid UUID"),
-  ];
+  query("branch_id")
+    .notEmpty()
+    .withMessage("branch_id is required")
+    .isUUID()
+    .withMessage("branch_id must be a valid UUID"),
+];
+
+export const deliveryFeeValidation = [
+  check("branch_id")
+    .notEmpty()
+    .withMessage("branch_id is required")
+    .isUUID()
+    .withMessage("branch_id must be a valid UUID"),
+  check("deliveryFee")
+    .notEmpty()
+    .withMessage("Delivery fee is required")
+    .isInt({ min: 0 })
+    .withMessage("Delivery fee must be a non-negative integer"),
+];

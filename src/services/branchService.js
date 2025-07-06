@@ -14,6 +14,11 @@ class branchService {
         };
       }
       const branch = await prisma.branch.create({ data: { name, address } });
+      await prisma.setting.create({
+        data: {
+          branch_id: branch.id,
+        },
+      });
 
       return {
         status: true,

@@ -44,6 +44,7 @@ model branch {
   status    Boolean    @default(true)
   category  category[]
   modifier  modifier[]
+  setting   setting[]
 }
 
 model user {
@@ -115,7 +116,7 @@ model order {
   phoneNo       String
   postCode      String?
   address       String
-  status        orderStatus        @default(PENDING)
+  status        orderStatus   @default(PENDING)
   paymentStatus paymentStatus @default(PENDING)
   totalAmount   Int
   items         orderItem[]
@@ -168,4 +169,13 @@ model itemModifier {
   modifier modifier @relation(fields: [modifierId], references: [id], onDelete: Cascade)
 
   @@unique([itemId, modifierId]) // prevent duplicates
+}
+
+model setting {
+  id          String    @id @default(uuid())
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime? @updatedAt
+  deliveryFee Int       @default(0)
+  branch_id    String
+  branch      branch    @relation(fields: [branch_id], references: [id], onDelete: Cascade)
 }
