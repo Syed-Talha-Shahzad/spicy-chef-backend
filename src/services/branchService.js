@@ -4,7 +4,7 @@ const prisma = new PrismaClient();
 class branchService {
   static async createbranch(req) {
     try {
-      const { name, address } = req.body;
+      const { name, address, startTime, endTime } = req.body;
       const branchExists = await prisma.branch.findFirst({ where: { name } });
 
       if (branchExists) {
@@ -13,7 +13,7 @@ class branchService {
           message: "Branch already exists",
         };
       }
-      const branch = await prisma.branch.create({ data: { name, address } });
+      const branch = await prisma.branch.create({ data: { name, address, startTime, endTime } });
       await prisma.setting.create({
         data: {
           branch_id: branch.id,
@@ -51,7 +51,7 @@ class branchService {
   static async updateBranch(req) {
     try {
       const { id } = req.params;
-      const {name, address} = req.body;
+      const {name, address, startTime, endTime } = req.body;
 
       const branch = await prisma.branch.findUnique({ where: { id } });
 
@@ -64,7 +64,7 @@ class branchService {
 
       const updatedBranch = await prisma.branch.update({
         where: { id },
-        data: { name, address },
+        data: { name, address, startTime, endTime  },
       });
 
       return {

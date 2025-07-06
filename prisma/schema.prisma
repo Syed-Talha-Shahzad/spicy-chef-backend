@@ -41,6 +41,8 @@ model branch {
   updatedAt DateTime?  @updatedAt
   name      String
   address   String?
+  startTime String?
+  endTime   String?
   status    Boolean    @default(true)
   category  category[]
   modifier  modifier[]
