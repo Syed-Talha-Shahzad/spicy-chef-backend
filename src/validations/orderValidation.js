@@ -7,6 +7,11 @@ export const createOrderValidation = [
     .isIn(["DELIVERY", "COLLECTION"])
     .withMessage("Order type must be DELIVERY or COLLECTION"),
 
+  body("deliveryFee")
+    .optional()
+    .isFloat({ min: 0 })
+    .withMessage("Delivery fee must be a positive number"),
+
   body("paymentType")
     .notEmpty()
     .withMessage("Payment type is required")

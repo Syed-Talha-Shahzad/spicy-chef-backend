@@ -116,6 +116,7 @@ model order {
   phoneNo       String
   postCode      String?
   address       String
+  deiveryFee    Int           @default(0)
   status        orderStatus   @default(PENDING)
   paymentStatus paymentStatus @default(PENDING)
   totalAmount   Int
@@ -176,6 +177,6 @@ model setting {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime? @updatedAt
   deliveryFee Int       @default(0)
-  branch_id    String
+  branch_id   String
   branch      branch    @relation(fields: [branch_id], references: [id], onDelete: Cascade)
 }
