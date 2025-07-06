@@ -208,13 +208,26 @@ class orderService {
         },
       });
 
+      if (paymentType === "STRIPE" && parseFloat(deliveryFee) > 0) {
+        stripeLineItems.push({
+          price_data: {
+            currency: "usd",
+            product_data: {
+              name: "Delivery Fee",
+            },
+            unit_amount: Math.round(parseFloat(deliveryFee) * 100),
+          },
+          quantity: 1,
+        });
+      }
+
       if (paymentType === "STRIPE") {
         console.log("Creating Stripe session for order:", order.id);
         const session = await stripe.checkout.sessions.create({
           payment_method_types: ["card"],
           mode: "payment",
           line_items: stripeLineItems,
-          success_url: `${process.env.FRONTEND_URL}?orderId=${order.id}`,
+          success_url: `${process.env.FRONTEND_URL}/order-status?orderId=${order.id}`,
           cancel_url: `${process.env.FRONTEND_URL}`,
         });
 
