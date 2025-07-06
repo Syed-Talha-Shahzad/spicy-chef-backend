@@ -4,7 +4,8 @@ import { checkValidationResult, checkAdmin } from "../middlewares/index.js";
 import {
   createcategoryValidation,
   updateCategoryValidation,
-  createItemValidation
+  createItemValidation,
+  discountValidation
 } from "../validations/categoryValidation.js";
 import { branchIdValidation } from "../validations/generalValidation.js";
 import { categoryController } from "../controllers/index.js";
@@ -62,6 +63,14 @@ router.delete(
   "/item/:id",
   checkAdmin,
   categoryController.deleteItem
+);
+
+router.put(
+  "/item-discount/:id",
+  checkAdmin,
+  discountValidation,
+  checkValidationResult,
+  categoryController.updateItemDiscount
 );
 
 export default router;

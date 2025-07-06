@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "order" ALTER COLUMN "totalAmount" SET DATA TYPE DECIMAL(65,30);

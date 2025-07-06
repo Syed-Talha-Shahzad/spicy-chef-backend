@@ -777,6 +777,37 @@ class categoryService {
       };
     }
   }
+
+  static async updateItemDiscount(req) {
+    try {
+      const { id } = req.params;
+      const { discount } = req.body;
+      const item = await prisma.item.findUnique({
+        where: { id },
+      });
+      if (!item) {
+        return {
+          status: false,
+          message: "Item not found",
+        };
+      }
+   
+      const updatedItem = await prisma.item.update({
+        where: { id },
+        data: { discount },
+      });
+      return {
+        status: true,
+        message: "Item discount updated successfully",
+        data: updatedItem,
+      };
+    } catch (error) {
+      return {
+        status: false,
+        message: error.message,
+      };
+    }
+  }
 }
 
 export default categoryService;

@@ -47,6 +47,11 @@ class categoryController {
     const result = await categoryService.deleteItem(req);
     return responseUtility.sendResponse(res, result);
   }
+
+  static async updateItemDiscount(req, res) {
+    const result = await categoryService.updateItemDiscount(req);
+    return responseUtility.sendResponse(res, result);
+  }
 }
 
 export default categoryController;

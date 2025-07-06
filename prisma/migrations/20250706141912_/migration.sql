@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "order" ALTER COLUMN "deiveryFee" SET DEFAULT 0,
+ALTER COLUMN "deiveryFee" SET DATA TYPE DECIMAL(65,30);

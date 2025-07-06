@@ -148,7 +148,15 @@ class orderService {
             });
           }
         } else if (baseItem) {
-          totalAmount += baseItem.price * i.quantity;
+          const discount = baseItem.discount || 0;
+          const discountedPrice =
+            parseFloat(baseItem.price) * (1 - discount / 100);
+
+          const finalDiscountedPrice = parseFloat(
+            (discountedPrice * i.quantity).toFixed(2)
+          );
+
+          totalAmount += finalDiscountedPrice;
           orderItems.push({
             quantity: i.quantity,
             itemId: baseItem.id,
@@ -161,7 +169,7 @@ class orderService {
                 product_data: {
                   name: `Item: ${baseItem.name}`,
                 },
-                unit_amount: parseInt(baseItem.price) * 100,
+                unit_amount: Math.round(finalDiscountedPrice * 100),
               },
               quantity: i.quantity,
             });
@@ -169,7 +177,9 @@ class orderService {
         }
       }
 
+      console.log("Total amount before delivery fee:", totalAmount);
       totalAmount += parseFloat(deliveryFee) || 0;
+      console.log("Total amount after adding delivery fee:", totalAmount);
       const order = await prisma.order.create({
         data: {
           orderId: generateOrderCode(),
@@ -182,6 +192,7 @@ class orderService {
           postCode,
           paymentStatus: "PENDING",
           totalAmount,
+          deliveryFee: parseFloat(deliveryFee) || 0,
           items: {
             create: orderItems,
           },
@@ -397,10 +408,10 @@ class orderService {
 
       const existingOrder = await prisma.order.findFirst({
         where: { id },
-      }); 
-      if (!existingOrder) { 
+      });
+      if (!existingOrder) {
         return {
-          status: false, 
+          status: false,
           message: "Order not found",
         };
       }
@@ -409,14 +420,14 @@ class orderService {
           status: false,
           message: "Order is already accepted",
         };
-      } 
+      }
 
       if (existingOrder.status === ORDER_STATUS.REJECTED) {
         return {
           status: false,
           message: "Order is already rejected",
         };
-      } 
+      }
 
       await prisma.order.update({
         where: { id },

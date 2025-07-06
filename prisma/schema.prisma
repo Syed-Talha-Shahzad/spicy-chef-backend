@@ -85,6 +85,7 @@ model item {
   name         String
   price        String
   image        String?
+  discount     Int?
   description  String?
   category_id  String
   category     category       @relation(fields: [category_id], references: [id], onDelete: Cascade)
@@ -118,10 +119,10 @@ model order {
   phoneNo       String
   postCode      String?
   address       String
-  deiveryFee    Int           @default(0)
+  deliveryFee    Decimal       @default(0)
   status        orderStatus   @default(PENDING)
   paymentStatus paymentStatus @default(PENDING)
-  totalAmount   Int
+  totalAmount   Decimal
   items         orderItem[]
 }
 

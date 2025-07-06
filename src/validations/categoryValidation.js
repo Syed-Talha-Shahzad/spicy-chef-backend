@@ -265,3 +265,11 @@ export const updateModifierValidation = [
     .isInt({ min: 0 })
     .withMessage("modifierOption price must be a non-negative integer"),
 ];
+
+export const discountValidation = [
+  body("discount")
+    .notEmpty()
+    .withMessage("Discount is required")
+    .isInt({ min: 0, max: 100 })
+    .withMessage("Discount must be an integer between 0 and 100"),
+]
