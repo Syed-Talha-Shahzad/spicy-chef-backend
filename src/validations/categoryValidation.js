@@ -12,7 +12,6 @@ export const createcategoryValidation = [
     .isBoolean()
     .withMessage("is_deal must be a boolean value"),
 
-  body("image").optional().isURL().withMessage("Image must be a valid URL"),
 
   body("branch_id")
     .notEmpty()
@@ -28,10 +27,6 @@ export const createcategoryValidation = [
 
   body("items.*.price").notEmpty().withMessage("Item price is required"),
 
-  body("items.*.image")
-    .optional()
-    .isURL()
-    .withMessage("Item image must be a valid URL"),
 
   body("items.*.description")
     .optional()
@@ -84,10 +79,6 @@ export const updateCategoryValidation = [
     .isString()
     .withMessage("Category name must be a string."),
 
-  body("image")
-    .optional()
-    .isURL()
-    .withMessage("Category image must be a valid URL."),
 
   body("branch_id")
     .notEmpty()
@@ -107,10 +98,6 @@ export const updateCategoryValidation = [
   body("items.*.name").notEmpty().withMessage("Item name is required."),
   body("items.*.price").notEmpty().withMessage("Item price is required."),
 
-  body("items.*.image")
-    .optional()
-    .isURL()
-    .withMessage("Item image must be a valid URL."),
 
   body("items.*.description")
     .optional()
