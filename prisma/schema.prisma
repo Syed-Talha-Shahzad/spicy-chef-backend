@@ -159,7 +159,7 @@ model modifierOption {
   name       String
   modifierId String
   modifier   modifier    @relation(fields: [modifierId], references: [id], onDelete: Cascade)
-  price      Int
+  price Decimal @db.Decimal(10, 2)
   status     Boolean     @default(true)
   orderItem  orderItem[]
 }
