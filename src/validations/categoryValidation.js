@@ -227,7 +227,7 @@ export const createModifierValidation = [
   body("*.modifierOptions.*.price")
     .notEmpty()
     .withMessage("Each modifierOption must have a price")
-    .isInt({ min: 0 })
+    .isFloat({ min: 0 })
     .withMessage("modifierOption price must be a non-negative integer"),
 ];
 
@@ -262,7 +262,7 @@ export const updateModifierValidation = [
   body("modifierOptions.*.price")
     .notEmpty()
     .withMessage("Each modifierOption must have a price")
-    .isInt({ min: 0 })
+    .isFloat({ min: 0 })
     .withMessage("modifierOption price must be a non-negative integer"),
 ];
 
@@ -270,6 +270,6 @@ export const discountValidation = [
   body("discount")
     .notEmpty()
     .withMessage("Discount is required")
-    .isInt({ min: 0, max: 100 })
+    .isFloat({ min: 0, max: 100 })
     .withMessage("Discount must be an integer between 0 and 100"),
 ]
