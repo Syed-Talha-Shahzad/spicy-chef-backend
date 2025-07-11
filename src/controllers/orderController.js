@@ -26,6 +26,11 @@ class orderController {
     const result = await orderService.orderStatusUpdate(req);
     return responseUtility.sendResponse(res, result);
   }
+
+  static async orderDetails(req, res) {
+    const result = await orderService.orderDetails(req);
+    return responseUtility.sendResponse(res, result);
+  }
   
 
 }

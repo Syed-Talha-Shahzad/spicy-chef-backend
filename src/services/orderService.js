@@ -458,6 +458,65 @@ class orderService {
       };
     }
   }
+
+  static async orderDetails(req) {
+    try {
+      const { id } = req.params;  
+
+      const order = await prisma.order.findFirst({
+        where: { id },
+        orderBy: { createdAt: "desc" },
+        include: {
+          items: {
+            include: {
+              item: true,
+              variation: {
+                include: {
+                  item: {
+                    select: {
+                      name: true,
+                      price: true,
+                      image: true,
+                      description: true,
+                    },
+                  },
+                },
+              },
+              modifierOption: {
+                include: {
+                  modifier: {
+                    include: {
+                      itemModifier: {
+                        include: {
+                          item: {
+                            select: {
+                              id: true,
+                              name: true,
+                            },
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      });
+
+      return {
+        status: true,
+        message: "Order details fetched successfully",
+        data: order
+      }
+    }catch(error){
+      return{
+        status: false,
+        message: error.message,
+      }
+    }
+  }
 }
 
 export default orderService;
