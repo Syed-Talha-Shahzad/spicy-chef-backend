@@ -229,6 +229,9 @@ class orderService {
           line_items: stripeLineItems,
           success_url: `${process.env.FRONTEND_URL}/order-status?orderId=${order.id}`,
           cancel_url: `${process.env.FRONTEND_URL}`,
+          metadata: {
+            orderId: order.id, 
+          },
         });
 
         return {
