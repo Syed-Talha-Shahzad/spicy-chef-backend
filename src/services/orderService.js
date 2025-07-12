@@ -22,18 +22,18 @@ class orderService {
       deliveryFee,
       serviceFee,
     } = req.body;
-
+  
     let user = null;
     const authHeader = req.headers.authorization;
     if (authHeader && authHeader.startsWith("Bearer ")) {
       try {
         const token = authHeader.split(" ")[1];
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
+  
         const fetchedUser = await prisma.user.findFirst({
           where: { id: decoded.id },
         });
-
+  
         if (fetchedUser && fetchedUser.status !== false) {
           user = fetchedUser;
         }
@@ -51,7 +51,7 @@ class orderService {
         };
       }
     }
-
+  
     try {
       if (!items || !Array.isArray(items) || items.length === 0) {
         return {
@@ -59,9 +59,9 @@ class orderService {
           message: "At least one item is required in the order.",
         };
       }
-
+  
       const ids = items.map((i) => i.id);
-
+  
       const [dbVariations, dbModifierOptions, dbItems] = await Promise.all([
         prisma.variation.findMany({
           where: { id: { in: ids } },
@@ -83,13 +83,13 @@ class orderService {
           where: { id: { in: ids } },
         }),
       ]);
-
+  
       const validIds = new Set([
         ...dbVariations.map((v) => v.id),
         ...dbModifierOptions.map((m) => m.id),
         ...dbItems.map((i) => i.id),
       ]);
-
+  
       const invalidIds = ids.filter((id) => !validIds.has(id));
       if (invalidIds.length > 0) {
         return {
@@ -97,23 +97,23 @@ class orderService {
           message: `Invalid ID(s): ${invalidIds.join(", ")}`,
         };
       }
-
+  
       let totalAmount = 0;
       const orderItems = [];
       const stripeLineItems = [];
-
+  
       for (const i of items) {
         const variation = dbVariations.find((v) => v.id === i.id);
         const modifier = dbModifierOptions.find((m) => m.id === i.id);
         const baseItem = dbItems.find((it) => it.id === i.id);
-
+  
         if (variation) {
           totalAmount += variation.price * i.quantity;
           orderItems.push({
             quantity: i.quantity,
             variationId: variation.id,
           });
-
+  
           if (paymentType === "STRIPE") {
             stripeLineItems.push({
               price_data: {
@@ -121,7 +121,7 @@ class orderService {
                 product_data: {
                   name: `Variation: ${variation.item.name} - ${variation.name}`,
                 },
-                unit_amount: parseInt(variation.price) * 100,
+                unit_amount: Math.round(variation.price * 100),
               },
               quantity: i.quantity,
             });
@@ -133,17 +133,15 @@ class orderService {
             quantity: i.quantity,
             modifierOptionId: modifier.id,
           });
-
+  
           if (paymentType === "STRIPE") {
             stripeLineItems.push({
               price_data: {
                 currency: "usd",
                 product_data: {
-                  name: `Modifier: ${modifier.name} (${
-                    relatedItem?.name || ""
-                  })`,
+                  name: `Modifier: ${modifier.name} (${relatedItem?.name || ""})`,
                 },
-                unit_amount: parseInt(modifier.price) * 100,
+                unit_amount: Math.round(variation.price * 100),
               },
               quantity: i.quantity,
             });
@@ -152,17 +150,17 @@ class orderService {
           const discount = baseItem.discount || 0;
           const discountedPrice =
             parseFloat(baseItem.price) * (1 - discount / 100);
-
+  
           const finalDiscountedPrice = parseFloat(
             (discountedPrice * i.quantity).toFixed(2)
           );
-
+  
           totalAmount += finalDiscountedPrice;
           orderItems.push({
             quantity: i.quantity,
             itemId: baseItem.id,
           });
-
+  
           if (paymentType === "STRIPE") {
             stripeLineItems.push({
               price_data: {
@@ -170,17 +168,24 @@ class orderService {
                 product_data: {
                   name: `Item: ${baseItem.name}`,
                 },
-                unit_amount: Math.round(finalDiscountedPrice * 100),
+                unit_amount: Math.round(discountedPrice * 100), // price per unit
               },
               quantity: i.quantity,
             });
           }
         }
       }
+  
+      // Add fees to total amount
+      console.log("Total before fees:", totalAmount);
+      const deliveryFeeAmount = parseFloat(deliveryFee) || 0;
+      const serviceFeeAmount = parseFloat(serviceFee) || 0;
+      totalAmount += deliveryFeeAmount + serviceFeeAmount;
+      totalAmount = Number(totalAmount.toFixed(2));
 
-      console.log("Total amount before delivery fee:", totalAmount);
-      totalAmount += parseFloat(deliveryFee) || 0;
-      console.log("Total amount after adding delivery fee:", totalAmount);
+
+      console.log("Total after adding delivery and service fee:", totalAmount);
+  
       const order = await prisma.order.create({
         data: {
           orderId: generateOrderCode(),
@@ -193,8 +198,8 @@ class orderService {
           postCode,
           paymentStatus: "PENDING",
           totalAmount,
-          deliveryFee: parseFloat(deliveryFee) || 0,
-          serviceFee: parseFloat(serviceFee) || 0,
+          deliveryFee: deliveryFeeAmount,
+          serviceFee: serviceFeeAmount,
           items: {
             create: orderItems,
           },
@@ -209,34 +214,34 @@ class orderService {
           },
         },
       });
-
-      if (paymentType === "STRIPE" && parseFloat(deliveryFee) > 0) {
-        stripeLineItems.push({
-          price_data: {
-            currency: "usd",
-            product_data: {
-              name: "Delivery Fee",
-            },
-            unit_amount: Math.round(parseFloat(deliveryFee) * 100),
-          },
-          quantity: 1,
-        });
-      }
-
-      if (paymentType === "STRIPE" && parseFloat(serviceFee) > 0) {
-        stripeLineItems.push({
-          price_data: {
-            currency: "usd",
-            product_data: {
-              name: "Delivery Fee",
-            },
-            unit_amount: Math.round(parseFloat(serviceFee) * 100),
-          },
-          quantity: 1,
-        });
-      }
-
+  
       if (paymentType === "STRIPE") {
+        if (deliveryFeeAmount > 0) {
+          stripeLineItems.push({
+            price_data: {
+              currency: "usd",
+              product_data: {
+                name: "Delivery Fee",
+              },
+              unit_amount: Math.round(deliveryFeeAmount * 100),
+            },
+            quantity: 1,
+          });
+        }
+  
+        if (serviceFeeAmount > 0) {
+          stripeLineItems.push({
+            price_data: {
+              currency: "usd",
+              product_data: {
+                name: "Service Fee",
+              },
+              unit_amount: Math.round(serviceFeeAmount * 100),
+            },
+            quantity: 1,
+          });
+        }
+  
         console.log("Creating Stripe session for order:", order.id);
         const session = await stripe.checkout.sessions.create({
           payment_method_types: ["card"],
@@ -245,10 +250,10 @@ class orderService {
           success_url: `${process.env.FRONTEND_URL}/order-status?orderId=${order.id}`,
           cancel_url: `${process.env.FRONTEND_URL}`,
           metadata: {
-            orderId: order.id, 
+            orderId: order.id,
           },
         });
-
+  
         return {
           status: true,
           message: "Stripe session created",
@@ -258,7 +263,7 @@ class orderService {
           },
         };
       }
-
+  
       return {
         status: true,
         message: "Order placed successfully",
@@ -272,7 +277,7 @@ class orderService {
       };
     }
   }
-
+  
   static async orderListing(req) {
     try {
       const { filter } = req.query;

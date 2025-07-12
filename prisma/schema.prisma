@@ -119,11 +119,11 @@ model order {
   phoneNo       String
   postCode      String?
   address       String
-  deliveryFee   Decimal       @default(0)
-  serviceFee    Decimal       @default(0)
+  deliveryFee   Decimal       @default(0) @db.Decimal(10, 2)
+  serviceFee    Decimal       @default(0) @db.Decimal(10, 2)
   status        orderStatus   @default(PENDING)
   paymentStatus paymentStatus @default(PENDING)
-  totalAmount   Decimal
+  totalAmount   Decimal       @db.Decimal(10, 2)
   items         orderItem[]
 }
 
@@ -180,8 +180,8 @@ model setting {
   id          String    @id @default(uuid())
   createdAt   DateTime  @default(now())
   updatedAt   DateTime? @updatedAt
-  deliveryFee Decimal   @default(0)
-  serviceFee  Decimal   @default(0)
+  deliveryFee Decimal   @default(0) @db.Decimal(10, 2)
+  serviceFee  Decimal   @default(0) @db.Decimal(10, 2)
   branch_id   String
   branch      branch    @relation(fields: [branch_id], references: [id], onDelete: Cascade)
 }
