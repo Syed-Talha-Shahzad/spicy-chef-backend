@@ -128,6 +128,8 @@ class orderService {
           }
         } else if (modifier) {
           const relatedItem = modifier.modifier.itemModifier[0]?.item;
+          console.log('Processing modifier:', relatedItem);
+
           totalAmount += modifier.price * i.quantity;
           orderItems.push({
             quantity: i.quantity,
@@ -141,7 +143,7 @@ class orderService {
                 product_data: {
                   name: `Modifier: ${modifier.name} (${relatedItem?.name || ""})`,
                 },
-                unit_amount: Math.round(variation.price * 100),
+                unit_amount: Math.round(Number(modifier.price) * 100),
               },
               quantity: i.quantity,
             });
