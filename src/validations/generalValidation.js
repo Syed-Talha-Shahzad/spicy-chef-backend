@@ -22,6 +22,10 @@ export const deliveryFeeValidation = [
   check("deliveryFee")
     .notEmpty()
     .withMessage("Delivery fee is required")
-    .isInt({ min: 0 })
+    .isFloat({ min: 0 })
+    .withMessage("Delivery fee must be a non-negative integer"),
+  check("serviceFee")
+    .optional()
+    .isFloat({ min: 0 })
     .withMessage("Delivery fee must be a non-negative integer"),
 ];

@@ -20,6 +20,7 @@ class orderService {
       phoneNo,
       postCode,
       deliveryFee,
+      serviceFee,
     } = req.body;
 
     let user = null;
@@ -193,6 +194,7 @@ class orderService {
           paymentStatus: "PENDING",
           totalAmount,
           deliveryFee: parseFloat(deliveryFee) || 0,
+          serviceFee: parseFloat(serviceFee) || 0,
           items: {
             create: orderItems,
           },
@@ -216,6 +218,19 @@ class orderService {
               name: "Delivery Fee",
             },
             unit_amount: Math.round(parseFloat(deliveryFee) * 100),
+          },
+          quantity: 1,
+        });
+      }
+
+      if (paymentType === "STRIPE" && parseFloat(serviceFee) > 0) {
+        stripeLineItems.push({
+          price_data: {
+            currency: "usd",
+            product_data: {
+              name: "Delivery Fee",
+            },
+            unit_amount: Math.round(parseFloat(serviceFee) * 100),
           },
           quantity: 1,
         });
