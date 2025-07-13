@@ -177,11 +177,12 @@ model itemModifier {
 }
 
 model setting {
-  id          String    @id @default(uuid())
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime? @updatedAt
-  deliveryFee Decimal   @default(0) @db.Decimal(10, 2)
-  serviceFee  Decimal   @default(0) @db.Decimal(10, 2)
-  branch_id   String
-  branch      branch    @relation(fields: [branch_id], references: [id], onDelete: Cascade)
+  id           String    @id @default(uuid())
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime? @updatedAt
+  deliveryFee  Decimal   @default(0) @db.Decimal(10, 2)
+  deliveryTime Decimal   @default(0) @db.Decimal(10, 2)
+  serviceFee   Decimal   @default(0) @db.Decimal(10, 2)
+  branch_id    String
+  branch       branch    @relation(fields: [branch_id], references: [id], onDelete: Cascade)
 }
