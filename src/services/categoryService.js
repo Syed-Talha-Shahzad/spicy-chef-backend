@@ -79,6 +79,7 @@ class categoryService {
             name: item.name,
             price: item.price,
             image: item.image,
+            discount: item.discount || 0,
             description: item.description || "",
             category_id: category.id,
             variation: item.variation?.length
@@ -219,6 +220,7 @@ class categoryService {
               name: i.name,
               price: i.price,
               image: i.image,
+              discount: i.discount,
               description: i.description || "",
             },
           });
@@ -228,6 +230,7 @@ class categoryService {
               name: i.name,
               price: i.price,
               image: i.image,
+              discount: i.discount || 0,
               description: i.description || "",
               category_id: id,
             },
