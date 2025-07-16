@@ -32,4 +32,8 @@ export const deliveryFeeValidation = [
     .optional()
     .isFloat({ min: 0 })
     .withMessage("Delivery fee must be a non-negative integer"),
+  check("discount")
+    .optional()
+    .isFloat({ min: 0 })
+    .withMessage("Delivery fee must be a non-negative integer"),
 ];

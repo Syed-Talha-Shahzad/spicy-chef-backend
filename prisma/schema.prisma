@@ -118,6 +118,7 @@ model order {
   fullName      String
   phoneNo       String
   postCode      String?
+  discount      Decimal       @default(0) @db.Decimal(10, 2)
   address       String
   deliveryFee   Decimal       @default(0) @db.Decimal(10, 2)
   serviceFee    Decimal       @default(0) @db.Decimal(10, 2)
@@ -182,6 +183,7 @@ model setting {
   updatedAt    DateTime? @updatedAt
   deliveryFee  Decimal   @default(0) @db.Decimal(10, 2)
   deliveryTime Decimal   @default(0) @db.Decimal(10, 2)
+  discount     Decimal   @default(0) @db.Decimal(10, 2)
   serviceFee   Decimal   @default(0) @db.Decimal(10, 2)
   branch_id    String
   branch       branch    @relation(fields: [branch_id], references: [id], onDelete: Cascade)

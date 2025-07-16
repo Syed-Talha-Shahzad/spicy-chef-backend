@@ -4,7 +4,7 @@ const prisma = new PrismaClient();
 class generalService {
   static async deliveryFee(req) {
     try {
-      const { branch_id, deliveryFee , serviceFee, deliveryTime} = req.body;
+      const { branch_id, deliveryFee , serviceFee, deliveryTime, discount} = req.body;
       const branch = await prisma.branch.findUnique({
         where: { id: branch_id },
       });
@@ -22,7 +22,7 @@ class generalService {
       if (setting) {
         const updatedSetting = await prisma.setting.update({
           where: { id: setting.id },
-          data: { deliveryFee, serviceFee, deliveryTime },
+          data: { deliveryFee, serviceFee, deliveryTime, discount },
         });
         return {
           status: true,
