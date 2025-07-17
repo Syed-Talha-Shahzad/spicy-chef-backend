@@ -18,6 +18,11 @@ export const createOrderValidation = [
     .isIn(["CASH", "STRIPE", "CARD"])
     .withMessage("Payment type must be CASH, STRIPE, or CARD"),
 
+  body("discount")
+    .optional()
+    .isFloat({ min: 0, max: 100 })
+    .withMessage("Discount must be a number between 0 and 100"),
+
   body("fullName")
     .notEmpty()
     .withMessage("Full Name is required")

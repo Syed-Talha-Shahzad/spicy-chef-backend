@@ -20,6 +20,7 @@ class orderService {
       phoneNo,
       postCode,
       deliveryFee,
+      discount,
       serviceFee,
     } = req.body;
   
@@ -128,8 +129,6 @@ class orderService {
           }
         } else if (modifier) {
           const relatedItem = modifier.modifier.itemModifier[0]?.item;
-          console.log('Processing modifier:', relatedItem);
-
           totalAmount += modifier.price * i.quantity;
           orderItems.push({
             quantity: i.quantity,
@@ -170,7 +169,7 @@ class orderService {
                 product_data: {
                   name: `Item: ${baseItem.name}`,
                 },
-                unit_amount: Math.round(discountedPrice * 100), // price per unit
+                unit_amount: Math.round(discountedPrice * 100),
               },
               quantity: i.quantity,
             });
@@ -178,16 +177,24 @@ class orderService {
         }
       }
   
-      // Add fees to total amount
+      // Add fees
       console.log("Total before fees:", totalAmount);
       const deliveryFeeAmount = parseFloat(deliveryFee) || 0;
       const serviceFeeAmount = parseFloat(serviceFee) || 0;
       totalAmount += deliveryFeeAmount + serviceFeeAmount;
+  
+      // Handle overall discount
+      const discountPercentage = parseFloat(discount) || 0;
+      let discountAmount = 0;
+      if (discountPercentage > 0) {
+        discountAmount = totalAmount * (discountPercentage / 100);
+        totalAmount -= discountAmount;
+      }
+  
       totalAmount = Number(totalAmount.toFixed(2));
-
-
       console.log("Total after adding delivery and service fee:", totalAmount);
   
+      // Create order
       const order = await prisma.order.create({
         data: {
           orderId: generateOrderCode(),
@@ -200,6 +207,7 @@ class orderService {
           postCode,
           paymentStatus: "PENDING",
           totalAmount,
+          discount: discountPercentage,
           deliveryFee: deliveryFeeAmount,
           serviceFee: serviceFeeAmount,
           items: {
@@ -217,14 +225,13 @@ class orderService {
         },
       });
   
+      // Stripe payment
       if (paymentType === "STRIPE") {
         if (deliveryFeeAmount > 0) {
           stripeLineItems.push({
             price_data: {
               currency: "usd",
-              product_data: {
-                name: "Delivery Fee",
-              },
+              product_data: { name: "Delivery Fee" },
               unit_amount: Math.round(deliveryFeeAmount * 100),
             },
             quantity: 1,
@@ -235,12 +242,19 @@ class orderService {
           stripeLineItems.push({
             price_data: {
               currency: "usd",
-              product_data: {
-                name: "Service Fee",
-              },
+              product_data: { name: "Service Fee" },
               unit_amount: Math.round(serviceFeeAmount * 100),
             },
             quantity: 1,
+          });
+        }
+  
+        // Create coupon if discount > 0
+        let coupon = null;
+        if (discountPercentage > 0) {
+          coupon = await stripe.coupons.create({
+            percent_off: discountPercentage,
+            duration: "once",
           });
         }
   
@@ -253,7 +267,10 @@ class orderService {
           cancel_url: `${process.env.FRONTEND_URL}`,
           metadata: {
             orderId: order.id,
+            discountPercentage: `${discountPercentage}%`,
+            discountAmount: discountAmount.toFixed(2),
           },
+          discounts: coupon ? [{ coupon: coupon.id }] : undefined,
         });
   
         return {
@@ -279,6 +296,7 @@ class orderService {
       };
     }
   }
+  
   
   static async orderListing(req) {
     try {
