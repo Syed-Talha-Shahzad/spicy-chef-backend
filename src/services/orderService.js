@@ -118,7 +118,7 @@ class orderService {
           if (paymentType === "STRIPE") {
             stripeLineItems.push({
               price_data: {
-                currency: "usd",
+                currency: "gbp",
                 product_data: {
                   name: `Variation: ${variation.item.name} - ${variation.name}`,
                 },
@@ -138,7 +138,7 @@ class orderService {
           if (paymentType === "STRIPE") {
             stripeLineItems.push({
               price_data: {
-                currency: "usd",
+                currency: "gbp",
                 product_data: {
                   name: `Modifier: ${modifier.name} (${relatedItem?.name || ""})`,
                 },
@@ -165,7 +165,7 @@ class orderService {
           if (paymentType === "STRIPE") {
             stripeLineItems.push({
               price_data: {
-                currency: "usd",
+                currency: "gbp",
                 product_data: {
                   name: `Item: ${baseItem.name}`,
                 },
@@ -230,7 +230,7 @@ class orderService {
         if (deliveryFeeAmount > 0) {
           stripeLineItems.push({
             price_data: {
-              currency: "usd",
+              currency: "gbp",
               product_data: { name: "Delivery Fee" },
               unit_amount: Math.round(deliveryFeeAmount * 100),
             },
@@ -241,7 +241,7 @@ class orderService {
         if (serviceFeeAmount > 0) {
           stripeLineItems.push({
             price_data: {
-              currency: "usd",
+              currency: "gbp",
               product_data: { name: "Service Fee" },
               unit_amount: Math.round(serviceFeeAmount * 100),
             },
@@ -249,7 +249,6 @@ class orderService {
           });
         }
   
-        // Create coupon if discount > 0
         let coupon = null;
         if (discountPercentage > 0) {
           coupon = await stripe.coupons.create({
@@ -260,8 +259,9 @@ class orderService {
   
         console.log("Creating Stripe session for order:", order.id);
         const session = await stripe.checkout.sessions.create({
-          payment_method_types: ["card"],
+          payment_method_types: ["card"], // Only card, no Link
           mode: "payment",
+          currency: "gbp",
           line_items: stripeLineItems,
           success_url: `${process.env.FRONTEND_URL}/order-status?orderId=${order.id}`,
           cancel_url: `${process.env.FRONTEND_URL}`,
@@ -297,7 +297,7 @@ class orderService {
     }
   }
   
-  
+
   static async orderListing(req) {
     try {
       const { filter } = req.query;
@@ -504,7 +504,7 @@ class orderService {
 
   static async orderDetails(req) {
     try {
-      const { id } = req.params;  
+      const { id } = req.params;
 
       const order = await prisma.order.findFirst({
         where: { id },
@@ -551,13 +551,13 @@ class orderService {
       return {
         status: true,
         message: "Order details fetched successfully",
-        data: order
-      }
-    }catch(error){
-      return{
+        data: order,
+      };
+    } catch (error) {
+      return {
         status: false,
         message: error.message,
-      }
+      };
     }
   }
 }
