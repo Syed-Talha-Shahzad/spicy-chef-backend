@@ -1,4 +1,4 @@
-import { check, query } from "express-validator";
+import { check, query, body } from "express-validator";
 
 export const branchValidation = [
   check("name").notEmpty().withMessage("Name is required"),
@@ -36,4 +36,25 @@ export const deliveryFeeValidation = [
     .optional()
     .isFloat({ min: 0 })
     .withMessage("Delivery fee must be a non-negative integer"),
+];
+
+export const validateBranchTimings = [
+  body('branchId')
+    .isUUID().withMessage('branchId must be a valid UUID'),
+
+  body('timings')
+    .isArray({ min: 1 }).withMessage('timings must be a non-empty array'),
+
+  body('timings.*.day')
+    .isString().withMessage('day must be a string')
+    .isIn(['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'])
+    .withMessage('Invalid day of the week'),
+
+  body('timings.*.openTime')
+    .matches(/^([01]\d|2[0-3]):[0-5]\d$/)
+    .withMessage('openTime must be in HH:mm format (24-hour)'),
+
+  body('timings.*.closeTime')
+    .matches(/^([01]\d|2[0-3]):[0-5]\d$/)
+    .withMessage('closeTime must be in HH:mm format (24-hour)'),
 ];

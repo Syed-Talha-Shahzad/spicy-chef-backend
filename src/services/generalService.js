@@ -4,7 +4,8 @@ const prisma = new PrismaClient();
 class generalService {
   static async deliveryFee(req) {
     try {
-      const { branch_id, deliveryFee , serviceFee, deliveryTime, discount} = req.body;
+      const { branch_id, deliveryFee, serviceFee, deliveryTime, discount } =
+        req.body;
       const branch = await prisma.branch.findUnique({
         where: { id: branch_id },
       });
@@ -82,6 +83,95 @@ class generalService {
       };
     }
   }
+
+  static async createOrUpdateBranchTimings(req) {
+    const { branchId, timings } = req.body;
+
+    try {
+      const branch = await prisma.branch.findUnique({
+        where: { id: branchId },
+      });
+      if (!branch) {
+        return {
+          status: false,
+          message: "Branch not found",
+        };
+      }
+      // Step 1: Delete existing timings for this branch
+      await prisma.branchTiming.deleteMany({
+        where: { branchId },
+      });
+
+      // Step 2: Create new timings
+      const result = await prisma.branchTiming.createMany({
+        data: timings.map((t) => ({
+          branchId,
+          day: t.day,
+          openTime: t.openTime,
+          closeTime: t.closeTime,
+        })),
+      });
+
+      return {
+        status: true,
+        message: "Timings updated successfully",
+        count: result,
+      };
+    } catch (error) {
+      console.error("Error saving timings:", error);
+      return {
+        status: false,
+        message: error.message,
+      };
+    }
+  }
+
+  static async getBranchTimings (req){
+    const { id } = req.params;
+  
+    try {
+
+     const branch = await prisma.branch.findUnique({
+        where: { id },
+      });
+      if (!branch) {
+        return {
+          status: false,
+          message: "Branch not found",
+        };
+      }
+      
+      const dayOrder = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+
+    let  timings = await prisma.branchTiming.findMany({
+        where: { branchId: id },
+        select:{
+          day: true,
+          openTime: true,
+          closeTime: true,
+        },
+        orderBy: {
+          day: 'asc',
+        },
+      });
+
+      const sortedTimings = timings.sort(
+        (a, b) => dayOrder.indexOf(a.day) - dayOrder.indexOf(b.day)
+      );
+  
+      return {
+        status: true,
+        message: 'Timings retrieved successfully',
+        data: sortedTimings,
+      };
+    }catch (error) {
+      console.error('Error fetching timings:', error);
+      return {
+        status: false,
+        message: error.message,
+      }
+    }
+  };
 }
 
 export default generalService;
